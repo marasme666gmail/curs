@@ -1,0 +1,44 @@
+---
+description: Multi-agent workflow and handoff rules for feature delivery
+alwaysApply: true
+---
+
+# Multi-Agent Workflow
+
+Agents are independent specialists. They communicate only through artifacts in `agents/artifacts/<feature>/`.
+
+## Pipeline
+
+1. **business-analyst** → `prd.md`
+2. **architect** → `design.md` (reads `prd.md`)
+3. **developer** → code in `src/` (reads `prd.md` + `design.md`)
+4. **code-reviewer** → `code-review.md` (reads `prd.md` + `design.md` + code changes)
+5. **security-reviewer** → `security-review.md` (reads `prd.md` + `design.md` + code changes)
+6. **tester** → `test-plan.md` + `defects.md` + tests (reads all prior artifacts; maps every SEC-ID from `security-review.md`)
+
+## Handoff rules
+
+- One writer per artifact file
+- Never skip a stage unless the user explicitly asks
+- Pass artifact paths between agents; do not rely on chat history alone
+- If blocked, return status `blocked` and name the missing input
+- If revision is needed upstream, return status `needs_revision` and name the target agent
+
+## Handoff format
+
+Every agent response must end with:
+
+```
+status: done | blocked | needs_revision
+artifact_paths: [list of files written or read]
+next_agent: business-analyst | architect | developer | code-reviewer | security-reviewer | tester | none
+```
+
+## Escalation
+
+- Unclear requirements → business-analyst
+- Design gap or API mismatch → architect
+- Code quality or design adherence (Must-fix) → developer
+- Security vulnerabilities (Critical/High) → developer
+- Design-level security flaw → architect
+- Failed tests or defects → developer
